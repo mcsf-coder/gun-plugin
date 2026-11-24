@@ -9,10 +9,10 @@
     .card { background: #181c27; border: 1px solid #2a3142; border-radius: 16px; max-width: 440px; width: 100%; padding: 28px; box-shadow: 0 20px 40px rgba(0,0,0,0.45); text-align: center; }
     h1 { font-size: 1.35rem; margin: 0 0 8px; color: #38bdf8; }
     p { color: #94a3b8; font-size: 0.92rem; margin: 0 0 22px; }
-    .step { display: flex; align-items: center; justify-content: space-between; background: #222838; border: 1px solid #333c52; border-radius: 10px; padding: 12px 16px; margin-bottom: 12px; cursor: pointer; transition: 0.2s; text-decoration: none; color: #fff; font-weight: 600; }
+    .step { display: flex; align-items: center; justify-content: space-between; background: #222838; border: 1px solid #333c52; border-radius: 10px; padding: 14px 16px; margin-bottom: 12px; cursor: pointer; transition: 0.2s; color: #fff; font-weight: 600; user-select: none; -webkit-tap-highlight-color: transparent; }
     .step:hover { border-color: #38bdf8; }
     .step.done { border-color: #22c55e; background: #162b22; color: #86efac; }
-    .badge { font-size: 0.8rem; padding: 4px 10px; border-radius: 999px; background: #ef4444; color: #fff; }
+    .badge { font-size: 0.8rem; padding: 4px 10px; border-radius: 999px; background: #ef4444; color: #fff; pointer-events: none; }
     .step.done .badge { background: #22c55e; color: #052e16; }
     #downloadBtn { display: block; width: 100%; margin-top: 20px; padding: 14px; border-radius: 10px; border: none; font-size: 1rem; font-weight: 700; background: #334155; color: #64748b; cursor: not-allowed; text-decoration: none; box-sizing: border-box; }
     #downloadBtn.unlocked { background: linear-gradient(135deg, #22c55e, #16a34a); color: #fff; cursor: pointer; }
@@ -28,13 +28,13 @@
       <span class="badge" id="badge1">Subscribe</span>
     </div>
 
-    <div class="step" id="step2" onclick="completeStep(2, 'https://youtube.com/shorts/eqEVwWszG7Q?feature=share')">
+    <div class="step" id="step2" onclick="completeStep(2, 'https://www.youtube.com/shorts/eqEVwWszG7Q')">
       <span>2. Like the YouTube Video</span>
       <span class="badge" id="badge2">Like</span>
     </div>
 
     <div class="step" id="step3" onclick="shareVideo()">
-      <span>3. Share Video (0 / 3)</span>
+      <span id="step3Text">3. Share Video (0 / 3)</span>
       <span class="badge" id="badge3">Share</span>
     </div>
 
@@ -43,11 +43,11 @@
 
   <script>
     const DOWNLOAD_URL = "https://www.patreon.com/mcsfcoder/posts/no-mods-ip-gta9-176263854";
-    const VIDEO_URL = "https://youtube.com/shorts/eqEVwWszG7Q?feature=share";
-    let s1 = false, s2 = false, shares = 0;
+    const VIDEO_URL = "https://www.youtube.com/shorts/eqEVwWszG7Q";
+    let s1 = false, s2 = false, shares = 0, step3Busy = false;
 
     function completeStep(num, url) {
-      window.open(url, "_blank");
+      try { window.open(url, "_blank"); } catch (e) {}
       const badge = document.getElementById("badge" + num);
       badge.textContent = "Checking...";
       setTimeout(() => {
@@ -59,22 +59,53 @@
       }, 6000);
     }
 
-    function shareVideo() {
-      if (navigator.share) {
-        navigator.share({ title: "Minecraft 26.3 3D Gun Plugin", url: VIDEO_URL }).catch(() => {});
-      } else {
-        navigator.clipboard.writeText(VIDEO_URL);
-        alert("Video link copied! Paste and share it with 3 friends.");
-      }
-      if (shares < 3) {
-        shares++;
-        document.querySelector("#step3 span").textContent = `3. Share Video (${shares} / 3)`;
-        if (shares >= 3) {
-          document.getElementById("step3").classList.add("done");
-          document.getElementById("badge3").textContent = "✓ Done";
+    function copyFallback(text) {
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).catch(() => {});
+        } else {
+          const el = document.createElement("textarea");
+          el.value = text;
+          document.body.appendChild(el);
+          el.select();
+          document.execCommand("copy");
+          document.body.removeChild(el);
         }
-        checkUnlock();
+      } catch (e) {}
+    }
+
+    function shareVideo() {
+      if (shares >= 3 || step3Busy) return;
+      step3Busy = true;
+
+      try {
+        if (navigator.share) {
+          navigator.share({ title: "Minecraft 26.3 3D Gun Plugin", url: VIDEO_URL }).catch(() => copyFallback(VIDEO_URL));
+        } else {
+          copyFallback(VIDEO_URL);
+        }
+      } catch (e) {
+        copyFallback(VIDEO_URL);
       }
+
+      const badge = document.getElementById("badge3");
+      badge.textContent = "Wait 3s...";
+
+      setTimeout(() => {
+        badge.textContent = "Checking...";
+        setTimeout(() => {
+          shares++;
+          step3Busy = false;
+          document.getElementById("step3Text").textContent = "3. Share Video (" + shares + " / 3)";
+          if (shares >= 3) {
+            document.getElementById("step3").classList.add("done");
+            badge.textContent = "✓ Done";
+          } else {
+            badge.textContent = "Share";
+          }
+          checkUnlock();
+        }, 2000);
+      }, 3000);
     }
 
     function checkUnlock() {
