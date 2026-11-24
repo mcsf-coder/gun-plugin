@@ -60,21 +60,31 @@
     }
 
     function shareVideo() {
+      if (shares >= 3 || sharingLock) return;
+      sharingLock = true;
+
       if (navigator.share) {
         navigator.share({ title: "Minecraft 26.3 3D Gun Plugin", url: VIDEO_URL }).catch(() => {});
       } else {
         navigator.clipboard.writeText(VIDEO_URL);
-        alert("Video link copied! Paste and share it with 3 friends.");
+        alert("Video link copied! Paste and share it with a friend.");
       }
-      if (shares < 3) {
+
+      const badge = document.getElementById("badge3");
+      badge.textContent = "Sharing...";
+
+      setTimeout(() => {
         shares++;
+        sharingLock = false;
         document.querySelector("#step3 span").textContent = `3. Share Video (${shares} / 3)`;
         if (shares >= 3) {
           document.getElementById("step3").classList.add("done");
-          document.getElementById("badge3").textContent = "✓ Done";
+          badge.textContent = "✓ Done";
+        } else {
+          badge.textContent = "Share";
         }
         checkUnlock();
-      }
+      }, 3000);
     }
 
     function checkUnlock() {
