@@ -60,36 +60,21 @@
     }
 
     function shareVideo() {
-      if (shares >= 3 || step3Busy) return;
-      step3Busy = true;
-
       if (navigator.share) {
         navigator.share({ title: "Minecraft 26.3 3D Gun Plugin", url: VIDEO_URL }).catch(() => {});
-      } else if (navigator.clipboard) {
-        navigator.clipboard.writeText(VIDEO_URL).catch(() => {});
+      } else {
+        navigator.clipboard.writeText(VIDEO_URL);
+        alert("Video link copied! Paste and share it with 3 friends.");
       }
-
-      const badge = document.getElementById("badge3");
-      badge.textContent = "Copied! Wait 3s...";
-
-      // 1. Nothing counts for 3 full seconds
-      setTimeout(() => {
-        badge.textContent = "Checking...";
-
-        // 2. Checks for 2 more seconds before counting 1 share
-        setTimeout(() => {
-          shares++;
-          step3Busy = false;
-          document.querySelector("#step3 span").textContent = `3. Share Video (${shares} / 3)`;
-          if (shares >= 3) {
-            document.getElementById("step3").classList.add("done");
-            badge.textContent = "✓ Done";
-          } else {
-            badge.textContent = "Share";
-          }
-          checkUnlock();
-        }, 2000);
-      }, 3000);
+      if (shares < 3) {
+        shares++;
+        document.querySelector("#step3 span").textContent = `3. Share Video (${shares} / 3)`;
+        if (shares >= 3) {
+          document.getElementById("step3").classList.add("done");
+          document.getElementById("badge3").textContent = "✓ Done";
+        }
+        checkUnlock();
+      }
     }
 
     function checkUnlock() {
